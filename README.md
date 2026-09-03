@@ -1,4 +1,4 @@
-# claude-tag-team
+# claude-tag-team-zcode-gemini
 
 Install and usage guide for **zcode** (Z.ai GLM coding agent) and **agy**
 (Google Antigravity coding agent CLI) — two sibling AI coding CLIs that
