@@ -150,18 +150,51 @@ agy -p "<prompt>" --mode plan
 agy -p "Review this hook for bugs and security issues, report only" --mode plan
 ```
 
-**Known quirk**: in headless/non-interactive use, agy can hit a permission
-wall if a task needs a tool that would normally prompt for approval
-(headless mode can't prompt, so the tool call is auto-denied). If you hit
-`"no output produced — a tool required the ... permission"`, either:
+### Headless permission wall
 
-- rephrase the prompt to avoid needing that tool (e.g. paste content inline
-  instead of asking agy to read a file), or
-- add an explicit allow-rule under `permissions.allow` in your agy/Claude
-  settings, or
-- as a last resort, `--dangerously-skip-permissions` (auto-approves every
-  tool call — only use this for a task you'd trust running fully
-  unattended).
+In headless/non-interactive use (`-p`/`--print`), agy can hit a permission
+wall if a task needs a tool that would normally prompt for approval —
+headless mode can't prompt, so the tool call is auto-denied instead. You'll
+see:
+
+```
+no output produced — a tool required the "<tool>" permission
+```
+
+Three ways to work around it, in order of preference:
+
+**1. Rephrase the prompt to avoid needing that tool.** Most hits are a file
+read or a shell command agy wanted to run on its own. Paste the content
+inline instead of asking agy to fetch it itself:
+
+```bash
+# Hits the wall — agy wants to read the file itself
+agy -p "Review src/hook.ts for bugs" --mode plan
+
+# Works — no tool call needed, content is already in the prompt
+agy -p "Review this file for bugs and security issues, report only:
+
+$(cat src/hook.ts)" --mode plan
+```
+
+**2. Use `--sandbox`** (discovered via `agy --help`, 2026-09-03 — not yet
+verified end-to-end in this repo's workflows): "Run in a sandbox with
+terminal restrictions enabled." This may loosen the permission wall for
+read-only/analysis tasks without a blanket skip — worth trying before
+reaching for option 3 if you hit this again. If you verify its actual
+behavior, replace this paragraph with what you found.
+
+**3. `--dangerously-skip-permissions`** — auto-approves every tool call for
+the session. Last resort; only use this for a task you'd trust running fully
+unattended, since it also skips the prompts you'd normally want (e.g. before
+a destructive shell command).
+
+*(An earlier version of this note also mentioned an agy-side
+`permissions.allow` settings rule as a fourth option. That claim could not
+be independently verified against `agy --help` or this machine's installed
+config in this pass — cut rather than left as an unverified instruction. If
+agy does expose a persistent allow-list, document the real config path and
+syntax here once confirmed.)*
 
 ---
 
@@ -278,4 +311,4 @@ the same files.
 | `command not found: zcode` | Alias not loaded, or running in a script/background shell that didn't source `.zshrc` | Re-run `source ~/.zshrc`, or call the `node .../zcode.cjs` path directly |
 | `command not found: agy` | `~/.local/bin` not on `PATH` yet | `source ~/.zshrc`, or re-run Antigravity's "Install `agy` command" |
 | zcode/agy prompt hangs forever | Ran without `-p`/`--print` — opened the interactive TUI | Always pass `-p "<prompt>"` for scripted/one-shot use |
-| agy: `"no output produced — a tool required ... permission"` | Headless mode can't prompt for tool permission | See the agy "Known quirk" note above |
+| agy: `"no output produced — a tool required ... permission"` | Headless mode can't prompt for tool permission | See [Headless permission wall](#headless-permission-wall) above — rephrase to skip the tool call, try `--sandbox`, or `--dangerously-skip-permissions` as a last resort |
