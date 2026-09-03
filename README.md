@@ -8,3 +8,8 @@ or parallel work.
 See [SETUP.md](./SETUP.md) for full installation steps, usage examples, and
 security notes (read that section before sharing tokens or config files —
 each user authenticates with their own account).
+
+Includes the actual `.claude/skills/zcode/` and `.claude/skills/agy/`
+Claude Code Skill files, so you can drop them into any project (or your
+user-level `~/.claude/skills/`) and use `/zcode` / `/agy` directly inside
+Claude Code.

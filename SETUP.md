@@ -14,6 +14,12 @@ to run tasks in parallel with Claude.
 keys, or session files are shared between users — see [Security](#security)
 below before you commit anything to a shared repo.
 
+This repo also ships the actual `/zcode` and `/agy` [Claude Code
+Skills](https://docs.claude.com/en/docs/claude-code/skills) used to drive
+these tools from inside Claude Code — see
+[Connecting zcode & agy to Claude Code](#connecting-zcode--agy-to-claude-code)
+below.
+
 ---
 
 ## Prerequisites
@@ -156,6 +162,76 @@ wall if a task needs a tool that would normally prompt for approval
 - as a last resort, `--dangerously-skip-permissions` (auto-approves every
   tool call — only use this for a task you'd trust running fully
   unattended).
+
+---
+
+## Connecting zcode & agy to Claude Code
+
+Installing the CLIs (above) is enough to run `zcode` / `agy` by hand from
+any terminal. But the actual point of this repo is using them **from
+inside Claude Code** — typing `/zcode <task>` or `/agy <task>` and having
+Claude shell out to them, read the result, and report back.
+
+There is no API integration here — a **Skill** is just a Markdown file
+that Claude Code reads and follows as instructions for that turn. This
+repo ships the exact skill files used to drive `/zcode` and `/agy`:
+
+```
+.claude/skills/zcode/SKILL.md
+.claude/skills/agy/SKILL.md
+```
+
+Each one has a YAML frontmatter block (`name`, `description`) that Claude
+Code indexes to know when to trigger it, followed by plain-English
+instructions — the exact CLI flags to use, when to run read-only, how to
+run several instances in parallel, and known quirks to avoid. Claude Code
+already has shell access, so "connecting" an agent is just documenting the
+right shell command for Claude to run — nothing more.
+
+### To wire this into your own project
+
+Copy the skill folders into your project's `.claude/skills/` directory:
+
+```bash
+mkdir -p /path/to/your/project/.claude/skills
+cp -r .claude/skills/zcode /path/to/your/project/.claude/skills/
+cp -r .claude/skills/agy /path/to/your/project/.claude/skills/
+```
+
+Or make them available in **every** project by copying them to your
+user-level skills directory instead:
+
+```bash
+mkdir -p ~/.claude/skills
+cp -r .claude/skills/zcode ~/.claude/skills/
+cp -r .claude/skills/agy ~/.claude/skills/
+```
+
+Restart Claude Code (or start a new session) in that project, then try:
+
+```
+/zcode reply with exactly one word: pong
+/agy reply with exactly one word: pong
+```
+
+Claude Code will read the matching `SKILL.md`, follow its instructions,
+run the CLI command described in it, and report the result back to you.
+You can also just describe the task in plain language ("ask zcode to
+review this file") — Claude Code matches intent against each skill's
+`description` field the same way it matches an explicit `/name`.
+
+### Why this pattern instead of a "real" integration
+
+- No new auth, proxy, or middleware — each CLI keeps its own login
+  (per user, per [Security](#security)), and Claude just calls it like any
+  other shell command it already has permission to run.
+- Read-only by default is enforced in the *instructions*, not in code —
+  `--disallowedTools "Edit Write"` (zcode) / `--mode plan` (agy) are just
+  flags the skill tells Claude to pass. Editing the `SKILL.md` changes the
+  behavior; there's no separate config to keep in sync.
+- The same pattern generalizes to any other CLI coding agent — write a
+  `SKILL.md` describing its non-interactive flags and safety defaults, and
+  Claude Code can delegate to it the same way.
 
 ---
 
